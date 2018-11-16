@@ -1,0 +1,4 @@
+aiohttp>=3.4.4
+colorama>=0.3.9
+websockets>=6.0
+aioconsole>=0.1.10
