@@ -22,7 +22,7 @@ Under construction..
 
 ## Submitting an issue.
 
-Please read through the [TODO](https://github.com/nortxort/tclib/blob/master/TODO)s and/or [issues](https://github.com/nortxort/tclib/issues) before submitting a new issue. If you want to submit a new issue, then use the [ISSUE TEMPLATE](https://github.com/nortxort/tclib/blob/master/ISSUE_TEMPLATE).
+Please read through the [TODO](https://github.com/nortxort/tclib/blob/master/TODO.md)s and/or [issues](https://github.com/nortxort/tclib/issues) before submitting a new issue. If you want to submit a new issue, then use the [ISSUE TEMPLATE](https://github.com/nortxort/tclib/blob/master/ISSUE_TEMPLATE.md).
 
 
 ## Author
