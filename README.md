@@ -4,8 +4,6 @@ Websocket package for tinychat chat rooms.
 
 This is more or less a rewrite of pinylib, but for python 3. This implements some benefits(hopefully) that python 3 has to offer, one of them being asynchronous implementation using asyncio.
 
-Since this is my first attempt at asynchronous programming, some things might not work as exspected, and some things might be changed later.
-
 I'd like to mention, that a lot of inspiration has been taken from the [discord package](https://github.com/Rapptz/discord.py) by [Rapptz](https://github.com/Rapptz).
 
 ## Setup
