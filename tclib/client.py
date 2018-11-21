@@ -186,10 +186,6 @@ class TinychatClient(object):
 
         return False
 
-    @property
-    def page_url(self):
-        return f'https://tinychat.com/room/{self.room}'
-
     def run(self):
         """
 
