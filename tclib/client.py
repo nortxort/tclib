@@ -186,6 +186,16 @@ class TinychatClient(object):
 
         return False
 
+    @property
+    def page_url(self):
+        """
+        The link for the room.
+
+        :return: The url to the room on tinychat.
+        :rtype: str
+        """
+        return f'https://tinychat.com/room/{self.room}'
+
     def run(self):
         """
 
@@ -574,12 +584,13 @@ class TinychatClient(object):
         :param site_key: The captcha site key.
         :type site_key: str
         """
-        self.console.write(f'Captcha enabled, site key: {site_key}.\n'
-                           f'1) Solve the captcha in a browser.\n'
-                           f'2) Close the browser/tab.\n'
-                           f'3) Reconnect the client/bot.\n')
+        # primitive workaround, but it seems to work.
+        self.console.write(f'Captcha enabled: {site_key}\n '
+                           f'1) Open {self.page_url} in a browser.\n '
+                           f'2) Solve the captcha and close the browser.\n '
+                           f'3) Reconnect the client/bot.', ts=False)
 
-        self.loop.create_task(self.disconnect(False))
+        await self.loop.create_task(self.disconnect(False))
 
     # Media Events.
     async def on_yut_playlist(self, playlist_data):
