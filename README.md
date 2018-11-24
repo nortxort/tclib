@@ -20,7 +20,24 @@ See [requirements.txt](https://github.com/nortxort/tclib/blob/master/requirement
 
 ## Usage.
 
-Under construction..
+A simple client that will enter a room with a random nick.
+
+    from tclib import TinychatClient
+    
+    
+    client = TinychatClient('aroomname')
+    client.run()
+
+If you wanted a specific name in the room, you could do so by providing the `nick` keyword.
+    
+    client = TinychatClient('aroomname', nick='mycoolnick')
+    client.run()
+
+Similar to the `nick` keyword, you can use the `account` and `password` keywords to have the client use a tinychat account.
+ 
+    client = TinychatClient('aroomname', account='tinychataccount', password='accountpassword')
+    client.run()
+
 
 ## Submitting an issue.
 
