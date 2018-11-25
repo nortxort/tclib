@@ -35,7 +35,7 @@ from .console import Console
 from ._process_event import ProcessEvent
 from .api import Account, user_info, close_session
 from .data.room import RoomState
-from . import utils
+from . import utils, captcha
 
 
 log = logging.getLogger(__name__)
@@ -56,6 +56,8 @@ class TinychatClient(object):
     :type password: str | None
     :keyword debug: Enable asyncio debug logging.
     :type debug: bool
+    :keyword acak: anti-captcha API key.
+    :type acak: str
     """
     def __init__(self, room_name, *, nick=None, loop=None, **options):
         """
@@ -76,6 +78,7 @@ class TinychatClient(object):
         self.console = Console(loop=self.loop)
         self.debug = options.get('debug', False)
 
+        self._anti_captcha_key = options.get('acak', '')
         self._acc = None
 
         if nick is None:
@@ -584,13 +587,28 @@ class TinychatClient(object):
         :param site_key: The captcha site key.
         :type site_key: str
         """
-        # primitive workaround, but it seems to work.
-        self.console.write(f'Captcha enabled: {site_key}\n '
-                           f'1) Open {self.page_url} in a browser.\n '
-                           f'2) Solve the captcha and close the browser.\n '
-                           f'3) Reconnect the client/bot.', ts=False)
+        if len(self._anti_captcha_key) == 32:
+            self.console.write('Starting captcha solving service, please wait...')
+            try:
+                ac = captcha.AntiCaptcha(self.page_url, self._anti_captcha_key)
+                token = await ac.solver(site_key)
+            except captcha.NoFundsError as nfe:
+                self.console.write(str(nfe))
+                await self.loop.create_task(self.disconnect(False))
+            except captcha.AntiCaptchaError as ace:
+                self.console.write(ace.description)
+                await self.loop.create_task(self.disconnect(False))
+            else:
+                # what is the length of a token?
+                if len(token) > 20:
+                    await self.send_captcha(token)
+        else:
+            self.console.write(f'Captcha enabled: {site_key}\n '
+                               f'1) Open {self.page_url} in a browser.\n '
+                               f'2) Solve the captcha and close the browser.\n '
+                               f'3) Reconnect the client/bot.', ts=False)
 
-        await self.loop.create_task(self.disconnect(False))
+            await self.loop.create_task(self.disconnect(False))
 
     # Media Events.
     async def on_yut_playlist(self, playlist_data):
