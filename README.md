@@ -59,5 +59,6 @@ See [LICENSE](https://github.com/nortxort/tclib/blob/master/LICENSE) for more de
 *Thanks to the following people, who in some way or another, has contributed to this project.*
 
 * [Rapptz](https://github.com/Rapptz)
+* [Aida](https://github.com/Autotonic)
 
 
