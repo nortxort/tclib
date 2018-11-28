@@ -179,9 +179,9 @@ class TinychatClient(object):
     @property
     def is_logged_in(self):
         """
-        Indicates if the client has logged in successfully.
+        Indicates if the client is logged in.
 
-        :return: True if logged in successfully, else False.
+        :return: True if logged in, else False.
         :rtype: bool
         """
         if isinstance(Account, self._acc):
@@ -260,6 +260,9 @@ class TinychatClient(object):
     async def disconnect(self, clean_up=True):
         """
         Close the websocket connection.
+
+        :param clean_up: Should be False if reconnecting.
+        :type clean_up: bool
         """
         if self.ws is not None and self.ws.open:
             log.debug('closing websocket connection.')
@@ -426,25 +429,28 @@ class TinychatClient(object):
             # user can be None if user is broadcasting, and then leaves?
             self.console.write(f'{user.nick}:{user.handle} left the room.')
 
-    async def on_ban(self, ban_info):
+    async def on_ban(self, banned):  # P
         """
-        Received when the client bans someone.
+        Received when the client bans a user.
 
-        :param ban_info: The ban information such as,
-        if the ban was a success or not.
-        :type ban_info: dict
+        TODO: Test this
+
+        :param banned: The user who was banned.
+        :type banned: Users.BannedUser
         """
-        pass
+        self.console.write(f'{banned.nick} was banned by '
+                           f'{banned.banned_by}.')
 
-    async def on_unban(self, unban_info):
+    async def on_unban(self, unbanned):  # P
         """
         Received when the client un-bans a user.
 
-        :param unban_info: The un-ban information such as
-        ID (handle) and if un-banned successfully.
-        :type unban_info: dict
+        TODO: Test this
+
+        :param unbanned: The banned user who was unbanned.
+        :type unbanned: Users.BannedUser
         """
-        pass
+        self.console.write(f'{unbanned.nick} was unbanned.')
 
     async def on_banlist(self, banlist):  # P
         """
@@ -561,24 +567,31 @@ class TinychatClient(object):
         self.console.write(f'{user.nick}:{user.handle} is waiting '
                            f'for broadcast approval.')
 
-    async def on_stream_moder_allow(self, moder_data):
+    async def on_stream_moder_allow(self, allowed):  # P
         """
         Received when a user has been allowed by the client,
         to broadcast in a green room.
 
-        :param moder_data: Contains information about the allow request.
-        :type moder_data: dict
-        """
-        pass
+        TODO: Test this
 
-    async def on_stream_moder_close(self, moder_data):
+        :param allowed: The user that was allowed to broadcast.
+        :type allowed: Users.User
         """
-        Received when a user has their broadcast closed by the client.
+        self.console.write(f'{allowed.nick}:{allowed.handle}'
+                           f' was allowed to broadcast.')
 
-        :param moder_data: Contains information about the close request.
-        :type moder_data: dict
+    async def on_stream_moder_close(self, closed):  # P
         """
-        pass
+        Received when a user has their broadcast
+        closed by the client.
+
+        TODO: Test this
+
+        :param closed: The user that was closed.
+        :type closed: Users.User
+        """
+        self.console.write(f'{closed.nick}:{closed.handle} '
+                           f'was closed.')
 
     async def on_captcha(self, site_key):  # P
         """
@@ -592,12 +605,12 @@ class TinychatClient(object):
             try:
                 ac = captcha.AntiCaptcha(self.page_url, self._anti_captcha_key)
                 token = await ac.solver(site_key)
-            except captcha.NoFundsError as nfe:
-                self.console.write(str(nfe))
-                await self.loop.create_task(self.disconnect(False))
-            except captcha.AntiCaptchaError as ace:
+            except (captcha.NoFundsError, captcha.MaxTriesError) as e:
+                self.console.write(e)
+                await self.loop.create_task(self.disconnect())
+            except captcha.AntiCaptchaApiError as ace:
                 self.console.write(ace.description)
-                await self.loop.create_task(self.disconnect(False))
+                await self.loop.create_task(self.disconnect())
             else:
                 # what is the length of a token?
                 if len(token) > 20:
@@ -606,9 +619,9 @@ class TinychatClient(object):
             self.console.write(f'Captcha enabled: {site_key}\n '
                                f'1) Open {self.page_url} in a browser.\n '
                                f'2) Solve the captcha and close the browser.\n '
-                               f'3) Reconnect the client/bot.', ts=False)
+                               f'3) Connect the client/bot.', ts=False)
 
-            await self.loop.create_task(self.disconnect(False))
+            await self.loop.create_task(self.disconnect())
 
     # Media Events.
     async def on_yut_playlist(self, playlist_data):

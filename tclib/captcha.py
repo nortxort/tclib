@@ -32,65 +32,49 @@ from . import web
 log = logging.getLogger(__name__)
 
 
-class InvalidApiKey(Exception):
+class AntiCaptchaError(Exception):
+    """
+    Anti captcha base exception.
+    """
+    pass
+
+
+class InvalidApiKey(AntiCaptchaError):
     """
     Raised on invalid API key.
     """
     pass
 
 
-class NoFundsError(Exception):
+class NoFundsError(AntiCaptchaError):
     """
     Raised when no funds available.
     """
     pass
 
 
-class AntiCaptchaError(Exception):
+class MaxTriesError(AntiCaptchaError):
+    """
+    Raised  when max tries has been reached.
+    """
+    pass
+
+
+class AntiCaptchaApiError(AntiCaptchaError):
     """
     Anti captcha APi error.
     """
-    def __init__(self, error):
-        self._error_id = error['errorId']
-        self._error_code = error['errorCode']
-        self._description = error['errorDescription']
-
-    @property
-    def id(self):
-        """
-        The API error id.
-
-        :return: The anti-captcha API error id.
-        :rtype: int
-        """
-        return self._error_id
-
-    @property
-    def code(self):
-        """
-        The API error code.
-
-        :return: The anti-captcha API error code.
-        :rtype: str
-        """
-        return self._error_code
-
-    @property
-    def description(self):
-        """
-        The API error description.
-
-        :return: The anti-captcha API error description.
-        :rtype: str
-        """
-        return self._description
+    def __init__(self, **error):
+        self.id = error.get('errorId')
+        self.code = error.get('errorCode')
+        self.description = error.get('errorDescription')
 
 
 class AntiCaptcha:
     """
     Anti captcha class for https://api.anti-captcha.com
     """
-    def __init__(self, page_url, api_key, timeout=10):
+    def __init__(self, page_url, api_key, timeout=10, max_tries=5):
         """
         Initialize the anti captcha class.
 
@@ -104,6 +88,7 @@ class AntiCaptcha:
         self._page_url = page_url
         self._api_key = api_key
         self._timeout = timeout
+        self._max_tries = max_tries
         self._site_key = ''
         self._task_id = 0
 
@@ -127,7 +112,7 @@ class AntiCaptcha:
             data = await pr.json()
 
             if data['errorId'] > 0:
-                raise AntiCaptchaError(data)
+                raise AntiCaptchaApiError(**data)
             else:
                 return data['balance']
 
@@ -171,10 +156,9 @@ class AntiCaptcha:
             data = await pr.json()
 
             if data['errorId'] > 0:
-                raise AntiCaptchaError(data)
+                raise AntiCaptchaApiError(**data)
             else:
                 self._task_id = data['taskId']
-                await asyncio.sleep(self._timeout)
                 return await self._task_waiter()
 
     async def _task_result(self):
@@ -192,7 +176,7 @@ class AntiCaptcha:
             data = await pr.json()
 
             if data['errorId'] > 0:
-                raise AntiCaptchaError(data)
+                raise AntiCaptchaApiError(**data)
             else:
                 log.debug(f'task result data: {data}')
                 return data
@@ -206,10 +190,16 @@ class AntiCaptcha:
         """
         log.info('starting anti-captcha task waiter.')
 
+        tries = 1
         while True:
+            log.debug(f'waiting {self._timeout} for result.')
+            await asyncio.sleep(self._timeout)
+
             solution = await self._task_result()
             if solution['status'] == 'ready':
                 return solution['solution']['gRecaptchaResponse']
 
-            log.debug(f'waiting {self._timeout}')
-            await asyncio.sleep(self._timeout)
+            if tries == self._max_tries:
+                raise MaxTriesError(f'max tries {self._max_tries} reached.')
+
+            tries += 1

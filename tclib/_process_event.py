@@ -87,6 +87,14 @@ class ProcessEvent:
             await self._process_userlist()
         elif self._event == 'banlist':
             await self._process_banlist()
+        elif self._event == 'ban':
+            await self._process_ban()
+        elif self._event == 'unban':
+            await self._process_unban()
+        elif self._event == 'stream_moder_allow':
+            await self._process_stream_moder_allow()
+        elif self._event == 'stream_moder_close':
+            await self._process_stream_moder_close()
         elif self._event == 'captcha':
             await self._process_captcha()
         elif self._event == 'password':
@@ -186,6 +194,54 @@ class ProcessEvent:
             banlist.append(banned_user)
 
         await self._client.run_method(self._method, banlist)
+
+    async def _process_ban(self):
+        """
+        Process a ban event.
+        """
+        if self._event_data.get('success'):
+            user_ban = self._client.users.add_banned_user(self._event_data)
+
+            await self._client.run_method(self._method, user_ban)
+        else:
+            # await self._client.on_error(self._method, **self._event_data)
+            pass
+
+    async def _process_unban(self):
+        """
+        Process an unban event.
+        """
+        if self._event_data.get('success'):
+            unbanned = self._client.users.delete_banned_user(self._event_data)
+
+            await self._client.run_method(self._method, unbanned)
+        else:
+            # await self._client.on_error(self._method, **self._event_data)
+            pass
+
+    async def _process_stream_moder_allow(self):
+        """
+        Process an stream_moder_allow event.
+        """
+        if self._event_data.get('success'):
+            allowed = self._client.users.search(self._event_data.get('handle'))
+
+            await self._client.run_method(self._method, allowed)
+        else:
+            # await self._client.on_error(self._method, **self._event_data)
+            pass
+
+    async def _process_stream_moder_close(self):
+        """
+        Process and stream_moder_close event.
+        """
+        if self._event_data.get('success'):
+            closed = self._client.users.search(self._event_data.get('handle'))
+
+            await self._client.run_method(self._method, closed)
+        else:
+            # await self._client.on_error(self._method, **self._event_data)
+            pass
 
     async def _process_captcha(self):
         """
