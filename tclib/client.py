@@ -438,8 +438,7 @@ class TinychatClient(object):
         :param banned: The user who was banned.
         :type banned: Users.BannedUser
         """
-        self.console.write(f'{banned.nick} was banned by '
-                           f'{banned.banned_by}.')
+        self.console.write(f'{banned.nick} was banned.')
 
     async def on_unban(self, unbanned):  # P
         """
