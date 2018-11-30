@@ -59,7 +59,7 @@ class Users(object):
         Returns a dictionary of all the users.
 
         :return: A dictionary where the key is
-        the user handle and the value is User.
+        the user handle(id) and the value is User.
         :rtype: dict
         """
         return self._users
@@ -186,7 +186,7 @@ class Users(object):
         """
         Add tinychat information from tinychat's API.
 
-        :param handle: The handle of the user to add info for.
+        :param handle: The handle(id) of the user to add info for.
         :type handle: int
         :param account_info: The account information.
         :type account_info: dict
@@ -203,10 +203,10 @@ class Users(object):
         """
         Delete a user from the user dictionary.
 
-        :param handle: The handle of the user to delete.
+        :param handle: The handle(id) of the user to delete.
         :type handle: int
         :return: The User object of the deleted user
-        or None if the handle was not found.
+        or None if the handle(id) was not found.
         :rtype: User | None
         """
         if handle in self.all:
@@ -218,12 +218,12 @@ class Users(object):
 
     def search(self, handle):
         """
-        Search the user dictionary by handle.
+        Search the user dictionary by handle(id).
 
-        Primary search method, since the user handle is
+        Primary search method, since the user handle(id) is
         present in all(?) user related events.
 
-        :param handle: The handle of the user to find.
+        :param handle: The handle(id) of the user to find.
         :type handle: int
         :return: The User or None if not found.
         :rtype: User | None
@@ -414,6 +414,23 @@ class Users(object):
             return None
 
         return self._find_most_recent(candidates)
+
+    def search_banlist_by_account(self, account):
+        """
+        Search the banlist by account.
+
+        NOTE: Test this.
+
+        :param account: The account to search for.
+        :type account: str
+        :return: A banned user matching the account.
+        :rtype: BannedUser
+        """
+        for ban_id in self.banlist:
+            if self.banlist[ban_id].account == account:
+                return self.banlist[ban_id]
+
+        return None
 
     def search_banlist_containing(self, contains):
         """
