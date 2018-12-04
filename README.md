@@ -10,7 +10,7 @@ I'd like to mention, that a lot of inspiration has been taken from the [discord 
 
 ## Setup
 
-tclib have been developed using Python 3.7.0 running on windows 7 (64bit). I have not had the opportunity to test it on other platforms, but i suppose it should work, as long as the requirements are met.
+tclib has been confirmed to work on Python 3.7+ under Windows 7 (x64) and GNU/Linux (x64)
 
 ### Requirements
 
