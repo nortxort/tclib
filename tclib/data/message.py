@@ -31,8 +31,8 @@ class TextMessage:
     """
     Class representing a received text message.
 
-    A text message can be a public message(msg_type=0)
-    or a private message(msg_type=1).
+    A text message can be a public message(msg_type=1)
+    or a private message(msg_type=2).
     """
     def __init__(self, text, event):
         """
