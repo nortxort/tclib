@@ -1,0 +1,10 @@
+# usual suspects
+*.pyc
+__pycache__/
+
+# client testing
+client_test.py
+
+# vim
+*.swp
+
