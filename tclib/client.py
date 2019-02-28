@@ -285,7 +285,8 @@ class TinychatClient(object):
         """
         This gets sent when ever the connection gets closed
         by the server for what ever reason.
-
+        Codes Reference: https://gist.github.com/Autotonic/66ee3237dd0cae2eed18298c43c697d2
+        NOTE: 0,1,5,7,8,9,10,11; triggers reconnect in webclient
         NOTE: Close the websocket connection
         on any code.
 
@@ -293,25 +294,38 @@ class TinychatClient(object):
         :type data: dict
         """
         code = data.get('error')
-        if code == 3:
-            self.console.write(f'Closed with code {code}')
+        if code == 0:
+            self.console.write(f'There is no internet connection... {code}')
+        elif code == 1:
+            self.console.write(f'Oops, chatroom ha no free slots for users {code}')
+        elif code == 2:
+            self.console.write(f'Chatroom has been closed by administrator {code}')
+        elif code == 3:
+            self.console.write(f'This room does not allow guests to join, please sign in {code}')
         elif code == 4:
-            self.console.write(f'You have been banned from the room. {code}')
+            self.console.write(f'You have been banned by a moderator {code}')
         elif code == 5:
-            self.console.write(f'Reconnect code? {code}')
+            self.console.write(f'Wrong password {code}')
         elif code == 6:
-            self.console.write(f'Double account sign in. {code}')
+            self.console.write(f'Single connection is allowed for chatroom (double sign on) {code}')
+        elif code == 7:
+            self.console.write(f'An error occurred while connecting to the server... {code}')
         elif code == 8:
             # timeout error. usually when not entering
             # password or captcha within ~60 seconds.
+            # tc-src: "An error occurred while connecting to the server..."
             self.console.write(f'Timeout error {code}')
+        elif code == 9:
+            self.console.write(f'An error occurred while connecting to the server... {code}')
+        elif code == 10:
+            self.console.write(f'An error occurred while connecting to the server... {code}')
         elif code == 11:
-            # not sure what this is or why it occurs
-            self.console.write(f'Something went wrong, code {code}')
+            self.console.write(f'An error occurred while connecting to the server... {code}')
         elif code == 12:
-            self.console.write(f'You have been kicked from the room. {code}')
+            self.console.write(f'You have been kicked by a moderator {code}')
 
         else:
+            # tc-src: "There is no internet connection..."
             self.console.write(f'Connection was closed, code: {code}')
 
     async def on_joined(self, data):
