@@ -34,20 +34,20 @@ class TextMessage:
     A text message can be a public message(msg_type=1)
     or a private message(msg_type=2).
     """
-    def __init__(self, text, event):
+    def __init__(self, event_data):
         """
         Initialize the class.
 
-        :param text: The text of the message.
-        :type text: str
-        :param event: The event the message belongs to.
-        :type event: str
+        :param event_data: The event data. This also contain
+        the actual event itself.
+        :type event_data: dict
         """
-        self._text = text
+        self._text = event_data.get('text')
+        self._event = event_data.get('tc')
         self._msg_type = 1
         self._ts = datetime.now()
 
-        if event == 'pvtmsg':
+        if self._event == 'pvtmsg':
             self._msg_type = 2
 
     @property

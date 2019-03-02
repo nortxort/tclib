@@ -233,7 +233,7 @@ class Account(object):
         """
         if self.account is not None:
             cookie = web.has_cookie('https://tinychat.com', 'user')
-            if cookie and cookie.value == self.account:
+            if cookie and cookie == self.account:
                 return True
 
         return False

@@ -25,6 +25,7 @@ DEALINGS IN THE SOFTWARE.
 """
 
 import logging
+import asyncio
 import aiohttp
 
 log = logging.getLogger(__name__)
@@ -51,6 +52,7 @@ class WebSession(object):
     A session `slave` class maintaining cookies across requests.
     """
     session = None
+    loop = asyncio.get_event_loop()
 
     @classmethod
     def create(cls, loop=None):
@@ -62,8 +64,11 @@ class WebSession(object):
         :return: A aiohttp.ClientSession object.
         :rtype: aiohttp.ClientSession
         """
-        cls.session = aiohttp.ClientSession(loop=loop)
-        log.debug(f'creating session: {cls.session} loop: {loop}')
+        if loop is not None:
+            cls.loop = loop
+
+        cls.session = aiohttp.ClientSession(loop=cls.loop)
+        log.debug(f'creating session: {cls.session} loop: {cls.loop}')
 
         return cls.session
 
@@ -143,7 +148,7 @@ def has_cookie(domain, cookie_name=None):
         cookie = domain_cookies.get(cookie_name)
 
         if cookie is not None:
-            return cookie
+            return cookie.value
 
     return False
 
@@ -182,7 +187,7 @@ async def request(method, url, **kwargs):
 
     try:
         response = await session.request(method=method, url=url, **kwargs)
-    except aiohttp.client_exceptions as e:
+    except aiohttp.ClientError as e:
         error = e
     finally:
         if error is not None:

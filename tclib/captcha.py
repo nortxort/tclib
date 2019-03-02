@@ -31,6 +31,9 @@ from . import web
 
 log = logging.getLogger(__name__)
 
+CAPTCHA_TIMEOUT = 10  # type: int
+MAX_TRIES = 5         # type: int
+
 
 class AntiCaptchaError(Exception):
     """
@@ -74,7 +77,7 @@ class AntiCaptcha:
     """
     Anti captcha class for https://api.anti-captcha.com
     """
-    def __init__(self, page_url, api_key, timeout=10, max_tries=5):
+    def __init__(self, page_url, api_key):
         """
         Initialize the anti captcha class.
 
@@ -82,13 +85,10 @@ class AntiCaptcha:
         :type page_url: str
         :param api_key: A anti-captcha API key.
         :type api_key: str
-        :param timeout: Timeout between fetching task result.
-        :type timeout: int
         """
         self._page_url = page_url
         self._api_key = api_key
-        self._timeout = timeout
-        self._max_tries = max_tries
+
         self._site_key = ''
         self._task_id = 0
 
@@ -192,14 +192,14 @@ class AntiCaptcha:
 
         tries = 1
         while True:
-            log.debug(f'waiting {self._timeout} for result.')
-            await asyncio.sleep(self._timeout)
+            log.debug(f'waiting {CAPTCHA_TIMEOUT} for result.')
+            await asyncio.sleep(CAPTCHA_TIMEOUT)
 
             solution = await self._task_result()
             if solution['status'] == 'ready':
                 return solution['solution']['gRecaptchaResponse']
 
-            if tries == self._max_tries:
-                raise MaxTriesError(f'max tries {self._max_tries} reached.')
+            if tries == MAX_TRIES:
+                raise MaxTriesError(f'max tries {MAX_TRIES} reached.')
 
             tries += 1

@@ -133,9 +133,8 @@ class ProcessEvent:
         or a public message.
         """
         user = self._client.users.search(self._event_data.get('handle'))
-        text = self._event_data.get('text')
-        msg = TextMessage(text, self._event)
-        await self._client.run_method(self._method, *(user, msg))
+        msg = TextMessage(self._event_data)
+        user.messages.append(msg)
 
     async def _process_yut_play(self):
         """
@@ -143,10 +142,12 @@ class ProcessEvent:
         """
         user = None
 
+        youtube = YoutubeMessage(self._event_data)
+
         if 'handle' in self._event_data:
             user = self._client.users.search(self._event_data.get('handle'))
+            user.messages.append(youtube)
 
-        youtube = YoutubeMessage(self._event_data)
         await self._client.run_method(self._method, *(user, youtube))
 
     async def _process_yut_pause(self):
@@ -169,6 +170,18 @@ class ProcessEvent:
         Process a broadcasting event.
         """
         user = self._client.users.search(self._event_data.get('handle'))
+
+        if self._event == 'publish':
+            user.is_broadcasting = True
+            user.is_waiting = False
+
+        elif self._event == 'unpublish':
+            user.is_broadcasting = False
+
+        elif self._event == 'pending_moderation':
+            self._client.state.set_greenroom(True)
+            user.is_waiting = True
+
         await self._client.run_method(self._method, user)
 
     async def _process_userlist(self):
