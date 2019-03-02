@@ -49,15 +49,29 @@ class TinychatClient(object):
 
     :keyword nick: Nickname to enter the room with.
     :type nick: str
+
     :keyword loop: Asyncio event loop.
+
     :keyword account: Tinychat account.
     :type account: str | None
+
     :keyword password: Tinychat password.
     :type password: str | None
+
+    :keyword room_pass: A room password.
+    :keyword type: str
+
     :keyword debug: Enable asyncio debug logging.
     :type debug: bool
+
     :keyword acak: anti-captcha API key.
     :type acak: str
+
+    :keyword captcha_timeout: Anti captcha time out.
+    :type captcha_timeout: int
+
+    :keyword captcha_max_tries: Anti captcha max tries.
+    :type captcha_max_tries: int
     """
     def __init__(self, room_name, *, nick=None, loop=None, **options):
         """
@@ -69,8 +83,8 @@ class TinychatClient(object):
         self.room = room_name
         self.nick = nick
         self.loop = asyncio.get_event_loop() if loop is None else loop
-        self.account = options.get('account', None)
-        self.password = options.get('password', None)
+        self.account = options.get('account')
+        self.password = options.get('password')
 
         self.ws = None
         self.users = Users()
@@ -78,6 +92,7 @@ class TinychatClient(object):
         self.console = Console(loop=self.loop)
         self.debug = options.get('debug', False)
 
+        self._room_pass = options.get('room_pass')
         self._anti_captcha_key = options.get('acak', '')
         self._acc = None
 
@@ -87,6 +102,11 @@ class TinychatClient(object):
 
         # asyncio debug mode
         self.loop.set_debug(self.debug)
+
+        self._is_joined = asyncio.Event(loop=self.loop)
+
+        captcha.CAPTCHA_TIMEOUT = options.get('captcha_timeout', 10)
+        captcha.MAX_TRIES = options.get('captcha_max_tries', 5)
 
     # Internals.
     def _clean_up(self):
@@ -199,25 +219,33 @@ class TinychatClient(object):
         """
         return f'https://tinychat.com/room/{self.room}'
 
+    @property
+    def is_joined(self):
+        """
+        Indicates if the client has joined the room.
+
+        :return: True if the client has joined the room.
+        :rtype: bool
+        """
+        return self._is_joined.is_set()
+
+    # Starters/Runners
     def run(self):
         """
+        A blocking method that abstracts
+        away the loop creation from the user.
+        
+        The most basic way of starting the client.
 
+        If more control over the loop is needed,
+        then self.start() or self.login + self.connect()
+        could be used.
         """
         self.loop.run_until_complete(self.start())
-        # try:
-        #     self.loop.run_until_complete(self.start(account, password))
-        # except KeyboardInterrupt:
-        #     log.debug('keyboard interrupt.')
-        # finally:
-        #     # close the websocket connection.
-        #     self.loop.run_until_complete(self.close())  # use task?
-        #     # close the event loop.
-        #     log.warning('CLOSING LOOP')
-        #     self.loop.close()
 
     async def start(self):
         """
-
+        A shorthand for self.login() + self.connect()
         """
         if self.account is not None and self.password is not None:
             await self.login(self.account, self.password)
@@ -247,15 +275,16 @@ class TinychatClient(object):
         if self.ws is not None:
 
             if self.ws.open:
-                # TODO: set is connected event?
+
                 while not self.ws.closed:
-                    # loop will end by calling self.close()
+                    # end loop by calling self.disconnect()
                     try:
                         await self.ws.poll_event()
                     except Exception as e:
                         log.warning(e)
                         break
-                # TODO: reset is connected event?
+
+                self._is_joined.clear()
 
     async def disconnect(self, clean_up=True):
         """
@@ -285,10 +314,16 @@ class TinychatClient(object):
         """
         This gets sent when ever the connection gets closed
         by the server for what ever reason.
+<<<<<<< Updated upstream
         Codes Reference: https://gist.github.com/Autotonic/66ee3237dd0cae2eed18298c43c697d2
+=======
+
+        Codes Reference: https://gist.github.com/Autotonic/66ee3237dd0cae2eed18298c43c697d2
+
+>>>>>>> Stashed changes
         NOTE: 0,1,5,7,8,9,10,11; triggers reconnect in webclient
         NOTE: Close the websocket connection
-        on any code.
+        on any code?
 
         :param data: The close data.
         :type data: dict
@@ -344,6 +379,8 @@ class TinychatClient(object):
             await self.send_banlist()
 
         await self.on_room_info(data.get('room'))
+
+        self._is_joined.set()
 
     async def on_room_info(self, room_info):
         """
@@ -487,8 +524,6 @@ class TinychatClient(object):
         :type msg: TextMessage
         """
         self.console.write(f'{user.nick}: {msg.text}')
-        # add the message to the user message list.
-        user.messages.append(msg)
 
     async def on_pvtmsg(self, user, msg):  # P
         """
@@ -500,8 +535,6 @@ class TinychatClient(object):
         :type msg: TextMessage
         """
         self.console.write(f'[PM] {user.nick}: {msg.text}')
-        # add the message to the user message list.
-        user.messages.append(msg)
 
     async def on_publish(self, user):  # P
         """
@@ -510,8 +543,6 @@ class TinychatClient(object):
         :param user: The user broadcasting as User object.
         :type user: Users.User
         """
-        user.is_broadcasting = True
-        user.is_waiting = False
         self.console.write(f'{user.nick}:{user.handle} is broadcasting.')
 
     async def on_unpublish(self, user):  # P
@@ -522,7 +553,6 @@ class TinychatClient(object):
         :type user: Users.User
         """
         if user is not None:
-            user.is_broadcasting = False
             self.console.write(f'{user.nick}:{user.handle} stopped broadcasting.')
 
     async def on_sysmsg(self, msg):
@@ -549,24 +579,22 @@ class TinychatClient(object):
     async def on_password(self, req_id):  # P
         """
         Received when a room is password protected.
-
-        An on_closed event with code 8 will be called
-        if a password has not been provided within
-        ~60 seconds
-
-        3 password attempts can be tried
-        before a reconnect is required.
         """
-        try:
-            rp = await asyncio.wait_for(self.console.input(
-                f'Password protected room ({req_id}), '
-                f'enter password:\n'), 59)
-        except asyncio.TimeoutError:
-            self.console.write('Password timeout. '
-                               'Click enter to quit.', ts=False)
-            await self.disconnect()
+        if self._room_pass is not None:
+            await self.send_room_password(self._room_pass)
         else:
-            await self.send_room_password(rp)
+            try:
+                self._room_pass = await asyncio.wait_for(self.console.input(
+                    f'Password protected room ({req_id}),'
+                    f' enter password:\n'), 59)
+
+            except asyncio.TimeoutError:
+                self.console.write('Password timeout. '
+                                   'Click enter to quit.', ts=False)
+                await self.disconnect()
+
+            else:
+                await self.send_room_password(self._room_pass)
 
     async def on_pending_moderation(self, user):  # P
         """
@@ -575,8 +603,6 @@ class TinychatClient(object):
         :param user: The user waiting in the green room as User object.
         :type user: Users.User
         """
-        self.state.set_greenroom(True)
-        user.is_waiting = True
         self.console.write(f'{user.nick}:{user.handle} is waiting '
                            f'for broadcast approval.')
 
@@ -652,7 +678,7 @@ class TinychatClient(object):
     async def on_yut_play(self, user, youtube):  # P
         """
         Received when a youtube gets started or searched.
-        
+
         :param user: The User object of the user
         starting or searching the youtube.
         :type user: Users.User
@@ -669,10 +695,6 @@ class TinychatClient(object):
                 elif youtube.offset > 0:
                     self.console.write(f'{user.nick} searched {youtube.title} to '
                                        f'{youtube.offset}')
-
-            # add the message to user message list,
-            # even if the user is the client itself
-            user.messages.append(youtube)
 
     async def on_yut_pause(self, user, youtube):  # P
         """
