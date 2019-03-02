@@ -314,13 +314,7 @@ class TinychatClient(object):
         """
         This gets sent when ever the connection gets closed
         by the server for what ever reason.
-<<<<<<< Updated upstream
-        Codes Reference: https://gist.github.com/Autotonic/66ee3237dd0cae2eed18298c43c697d2
-=======
 
-        Codes Reference: https://gist.github.com/Autotonic/66ee3237dd0cae2eed18298c43c697d2
-
->>>>>>> Stashed changes
         NOTE: 0,1,5,7,8,9,10,11; triggers reconnect in webclient
         NOTE: Close the websocket connection
         on any code?
