@@ -1,0 +1,4 @@
+ROOM=''
+ACCOUNT=''
+PASSWORD=''
+NICK=''
