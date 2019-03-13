@@ -123,17 +123,10 @@ class AntiCaptcha:
         :param site_key: The site key.
         :type site_key: str
         :return: A gRecaptchaResponse token
-        :rtype: str
+        :rtype: str | None
         """
         self._site_key = site_key
-        balance = await self.balance()
-        log.debug(f'anti-captcha balance: {balance}')
-        # balance is int if no funds
-        if isinstance(balance, int):
-            raise NoFundsError(f'api key({self._api_key}) '
-                               f'does not have any funds({balance})')
-        else:
-            return await self._create_task()
+        return await self._create_task()
 
     async def _create_task(self):
         """
@@ -156,7 +149,10 @@ class AntiCaptcha:
             data = await pr.json()
 
             if data['errorId'] > 0:
-                raise AntiCaptchaApiError(**data)
+                if data['errorId'] == 10:
+                    raise NoFundsError(f'no funds for `{self._api_key}`')
+                else:
+                    raise AntiCaptchaApiError(**data)
             else:
                 self._task_id = data['taskId']
                 return await self._task_waiter()
@@ -186,20 +182,24 @@ class AntiCaptcha:
         Wait for the task result to be done.
 
         :return: A gRecaptchaResponse token.
-        :rtype: str
+        :rtype: str | None
         """
-        log.info('starting anti-captcha task waiter.')
+        if self._task_id == 0:
+            log.debug(f'no task id `{self._task_id}`')
+            return None
+        else:
+            log.info('starting anti-captcha task waiter.')
 
-        tries = 1
-        while True:
-            log.debug(f'waiting {CAPTCHA_TIMEOUT} for result.')
-            await asyncio.sleep(CAPTCHA_TIMEOUT)
+            tries = 1
+            while True:
+                log.debug(f'waiting {CAPTCHA_TIMEOUT} for result.')
+                await asyncio.sleep(CAPTCHA_TIMEOUT)
 
-            solution = await self._task_result()
-            if solution['status'] == 'ready':
-                return solution['solution']['gRecaptchaResponse']
+                solution = await self._task_result()
+                if solution['status'] == 'ready':
+                    return solution['solution']['gRecaptchaResponse']
 
-            if tries == MAX_TRIES:
-                raise MaxTriesError(f'max tries {MAX_TRIES} reached.')
+                if tries == MAX_TRIES:
+                    raise MaxTriesError(f'max tries {MAX_TRIES} reached.')
 
-            tries += 1
+                tries += 1
